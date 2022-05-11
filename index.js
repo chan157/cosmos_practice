@@ -7,6 +7,7 @@ const rpcEndpoint = "https://rpc.cosmos.network";
 
 const chainId = "cosmoshub-4";
 
+import { Tendermint34Client } from "@cosmjs/tendermint-rpc";
 
 // async function getWallet(mnemonic) {
 //     return await proto.DirectSecp256k1HdWallet.fromMnemonic(mnemonic);
@@ -26,6 +27,7 @@ import * as bip39 from "bip39";
 
 // const secp256k1 = require("secp256k1");
 import secp256k1 from "secp256k1";
+import { decode } from "bech32";
 
 // import('tiny-secp256k1')
 //     .then(ecc => BIP32Factory(ecc))
@@ -85,6 +87,7 @@ class Cosmos {
 
     	
 	getAccounts(address) {
+        // api 호출 주소 문제 확인 필요
 		// let accountsApi = "/cosmos/auth/v1beta1/accounts/";
         let accountsApi = "/cosmos/auth/v1beta1/query.proto/";
         console.log(this.url + accountsApi + address);
@@ -110,6 +113,10 @@ class Cosmos {
         console.log(this.url + accountsApi + height);
 		return fetch(this.url + accountsApi + height).then(response => response.json())
     }
+
+    getTransactionsFromBlock(block) {
+        return block.result.block.data.txs
+    }
 }
 
 const cosmos = new Cosmos(rpcEndpoint, chainId);
@@ -127,11 +134,26 @@ console.log(privKey);
 const pubKeyAny = cosmos.getPubKey(privKey);
 console.log(pubKeyAny);
 
-cosmos.getBlock(1).then(data => {
-    console.log(data)
-})
+
+const tmClient = await Tendermint34Client.connect(rpcEndpoint) // your rpc endpoint
+// const resp = await tmClient.tx({ hash: txHash})
+// console.log(resp.tx)
+
+cosmos.getBlock(10443553)
+    .then( block => {
+        return cosmos.getTransactionsFromBlock(block)
+    })
+    .then(txs => {
+        let tx = txs[0]
+        tmClient.tx({ hash: "0x22B94E4DA4FD12B89487E7941DEECF5A3A4805544E3241110D75BD383F8C396C"})
+        .then((tm) => {
+            console.log(tm)
+        })
+        
+        // console.log(decodeResult)
+    })
 
 const myAccount = "cosmos15d2zt4923lh2ed9zem4su7nmwfm3py9grt3w0u";
-cosmos.getAccounts(myAccount).then(data => {
-    console.log(data);
-})
+// cosmos.getAccounts(myAccount).then(data => {
+//     console.log(data);
+// })
